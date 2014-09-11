@@ -33,6 +33,12 @@ public class AnimateGradients extends View {
         init();
     }
 
+    public void setColors(int startColor, int endColor) {
+        mStartColor = startColor;
+        mEndColor = endColor;
+        invalidate();
+    }
+
     public void startTransition(final int[] startGradient, final int[] endGradient, int duration) {
         if (startGradient == null || startGradient.length != 2) {
             throw new IllegalArgumentException("Start gradient must be of size 2");
@@ -40,17 +46,21 @@ public class AnimateGradients extends View {
         if (endGradient == null || endGradient.length != 2) {
             throw new IllegalArgumentException("End gradient must be of size 2");
         }
-        if (mAnimator.isRunning()) {
+        if (mAnimator != null && mAnimator.isRunning()) {
             mAnimator.cancel();
         }
+        mAnimator = new ValueAnimator();
+        mAnimator.setFloatValues(0, 1);
+        mAnimator.setInterpolator(new AccelerateInterpolator());
         mAnimator.setDuration(duration);
+        mAnimator.removeAllUpdateListeners();
         mAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                 mStartColor = (Integer) mArgbEvaluator.evaluate(valueAnimator.getAnimatedFraction(),
-                        startGradient[0], endGradient[0]);
+                        startGradient[0], startGradient[1]);
                 mEndColor = (Integer) mArgbEvaluator.evaluate(valueAnimator.getAnimatedFraction(),
-                        startGradient[1], endGradient[1]);
+                        endGradient[0], endGradient[1]);
                 invalidate();
             }
         });
@@ -59,9 +69,7 @@ public class AnimateGradients extends View {
 
     private void init() {
         mArgbEvaluator = new ArgbEvaluator();
-        mAnimator = new ValueAnimator();
-        mAnimator.setFloatValues(0, 1);
-        mAnimator.setInterpolator(new AccelerateInterpolator());
+
         mPaint = new Paint();
     }
 
@@ -69,10 +77,17 @@ public class AnimateGradients extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         @SuppressLint("DrawAllocation")
-        LinearGradient linearGradient = new LinearGradient(getWidth() / 2, 0, getWidth() / 2,
-                getHeight(), new int[]{mStartColor, mEndColor}, null, Shader.TileMode.CLAMP);
+        LinearGradient linearGradient = new LinearGradient(0, 0, getWidth(), getHeight(),
+                new int[]{mStartColor, mEndColor}, null, Shader.TileMode.CLAMP);
         mPaint.setShader(linearGradient);
         canvas.drawRect(0, 0, getWidth(), getHeight(), mPaint);
     }
 
+    public int getStartColor() {
+        return mStartColor;
+    }
+
+    public int getEndColor() {
+        return mEndColor;
+    }
 }
